@@ -64,7 +64,7 @@ def recommended_recipe_list():
     # リストをresultに格納
     result_list = []
     alpha = 0.5
-    R = 10
+    R = 20
     C = normalized_score_list.copy()
     recommended_recipe_list = greedy_reranking(C, R, alpha)
     result_list.append(recommended_recipe_list)
@@ -106,6 +106,13 @@ def preprocess_recipe_list(recipe_list):
 
     # POSTメソッドから取得した気分の値を取得
     mood_values = [float(request.form[mood]) for mood in moods]
+    # お疲れの項目を反転
+    mood_values[0] = mood_values[0] * -1
+
+    # 節約の項目を反転
+    mood_values[2] = mood_values[2] * -1
+    # 時間の項目を反転
+    mood_values[3] = mood_values[3] * -1
 
     return recipe_moods_std, mood_values
 
