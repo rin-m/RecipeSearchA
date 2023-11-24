@@ -1,23 +1,82 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>レシピ検索A</title>
-        <link rel="stylesheet" href="static/style.css">
-    </head>
-    <body>
-        <h1>検索結果</h1>
-        <table>
-            <tr>
-                <th>料理名</th>
-            </tr>
+<head>
+    <meta charset="UTF-8">
+    <title>レシピ検索A</title>
+    <link rel="stylesheet" href="static/style.css">
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var rows = document.querySelectorAll("td");
 
-            {% for row in recommended_recipes %}
-            <tr>
-                <td>{{ row[0] }}</td>
-            </tr>
-            {% endfor %}
+            rows.forEach(function (td) {
+                var hoverTime = 0;
+                var startTime;
 
-        </table>
-    </body>
+                // マウスが <td> に入ったときのイベントリスナー
+                function handleMouseEnter() {
+                    startTime = new Date().getTime(); // マウスが載った時刻を取得
+
+                    // マウスが <td> から出たときのイベントリスナー
+                    td.addEventListener("mouseleave", handleMouseLeave);
+                }
+
+                // マウスが <td> から出たときのイベントリスナー
+                function handleMouseLeave() {
+                    var endTime = new Date().getTime(); // マウスが出た時刻を取得
+                    hoverTime += (endTime - startTime) / 1000; // 経過時間を秒に変換し、合計時間に加算
+
+                    // イベントリスナーを解除
+                    td.removeEventListener("mouseleave", handleMouseLeave);
+
+                    // サーバーにデータを送信
+                    sendHoverTime(td.innerText, hoverTime);
+                }
+
+                // マウスが <td> に入ったときのイベントリスナーを登録
+                td.addEventListener("mouseenter", handleMouseEnter);
+            });
+
+            // サーバーにデータを送信する関数
+            function sendHoverTime(recipeName, hoverTime) {
+                // XMLHttpRequest オブジェクトを作成
+                var xhr = new XMLHttpRequest();
+
+                // POST リクエストを設定
+                xhr.open("POST", "/update_hover_time", true);
+                xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+
+                // リクエストが完了したときの処理
+                xhr.onload = function () {
+                    if (xhr.status === 200) {
+                        console.log("Hover time sent successfully");
+                    } else {
+                        console.error("Error sending hover time");
+                    }
+                };
+
+                // 送信するデータを JSON 形式に変換
+                var data = JSON.stringify({ recipe: recipeName, time: hoverTime });
+
+                // データを送信
+                xhr.send(data);
+            }
+        });
+    </script>
+</head>
+<body>
+    <h1>検索結果</h1>
+    <table>
+        <tr>
+            <th>料理名</th>
+        </tr>
+
+        {% for row in recommended_recipes %}
+        <!-- 各行のデータを表示 -->
+        <tr>
+            <td>{{ row[0] }}</td>
+        </tr>
+        {% endfor %}
+
+    </table>
+</body>
 </html>

@@ -1,7 +1,7 @@
 import sqlite3
 import csv
 import numpy as np
-from flask import Flask, render_template, request, escape
+from flask import Flask, render_template, request, jsonify
 from sklearn import preprocessing
 from datetime import datetime
 
@@ -104,6 +104,11 @@ def preprocess_recipe_list(recipe_list):
     # レシピデータの気分の値を標準化した値をリストに格納
     recipe_moods_std = [recipe_list_mood, recipe_list_body, recipe_list_money, recipe_list_time_std]
 
+    global hover_times
+    hover_times = {}
+    global file_counter
+    file_counter += 1
+    
     # POSTメソッドから取得した気分の値を取得
     mood_values = [float(request.form[mood]) for mood in moods]
     # お疲れの項目を反転
@@ -257,6 +262,43 @@ def normalize_score(search_result_candidate_list):
         normalized_score_list[i].append(list_score[i])
 
     return normalized_score_list
+
+# ファイルのカウンターを初期化
+file_counter = 0
+
+# /update_hover_time ルート
+@app.route('/update_hover_time', methods=['POST'])
+def update_hover_time():
+
+    # ルート関数内でリクエストやセッションにアクセスする
+    # (これはリクエストのコンテキスト内です)
+    data = request.get_json()
+    recipe_name = data.get('recipe')
+    hover_time = data.get('time')
+
+    hover_times[recipe_name] = hover_time
+
+    # CSV ファイルにデータを保存
+    save_hover_time_to_csv(hover_times)
+
+    return jsonify(success=True)
+
+def save_hover_time_to_csv(hover_times):
+    global file_counter
+    csv_filename = get_current_filename('./result/A_hover_times_', 'csv')
+
+    with open(csv_filename, 'w', newline='') as csv_file:
+        writer = csv.writer(csv_file)
+        writer.writerow(['recipe_name', 'hover_time'])  # ヘッダーを書き込む
+        for recipe_name, hover_time in hover_times.items():
+            writer.writerow([recipe_name, hover_time])
+
+    print(f'Data saved to {csv_filename}')
+
+def get_current_filename(base_name, extension):
+    global file_counter
+    filename = f"{base_name}_{file_counter}.{extension}"
+    return filename
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
